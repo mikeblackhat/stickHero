@@ -54,25 +54,19 @@ function generateTree() {
     trees.push({ x, color });
 }
 
-// Timer Management
-function resetTurnTimer() {
-    turnTimeRemaining = TURN_TIME_LIMIT;
-    lastTimerWarningSec = -1;
-    updateTimerUI();
-}
-
+// 60-Second Challenge Timer Management
 function updateTimerUI() {
     if (timerValElement) {
-        const displaySec = Math.max(0, turnTimeRemaining);
+        const displaySec = Math.max(0, gameTimeRemaining);
         const prefix = displaySec < 10 ? "0" : "";
         timerValElement.innerText = `${prefix}${displaySec.toFixed(1)}s`;
     }
     if (timerBarElement) {
-        const percent = Math.max(0, Math.min(100, (turnTimeRemaining / TURN_TIME_LIMIT) * 100));
+        const percent = Math.max(0, Math.min(100, (gameTimeRemaining / GAME_TIME_LIMIT) * 100));
         timerBarElement.style.width = `${percent}%`;
     }
     if (timerContainer) {
-        timerContainer.classList.toggle("timer-warning", turnTimeRemaining <= 3.0);
+        timerContainer.classList.toggle("timer-warning", gameTimeRemaining <= 10.0);
     }
 }
 
@@ -118,9 +112,10 @@ function resetGame() {
     score = 0;
     lastStretchTick = 0;
     lastStepX = 0;
-    gameStartTime = Date.now();
-
-    resetTurnTimer();
+    gameTimeRemaining = GAME_TIME_LIMIT;
+    isTimerRunning = false;
+    lastTimerWarningSec = -1;
+    updateTimerUI();
 
     introductionElement.style.opacity = 1;
     perfectElement.style.opacity = 0;
@@ -145,10 +140,15 @@ function resetGame() {
     heroY = 0;
 }
 
-function gameOver() {
+function gameOver(reason) {
+    isTimerRunning = false;
     if (gameOverModal) {
-        const totalSeconds = Math.max(0, Math.floor((Date.now() - gameStartTime) / 1000));
-        const timeStr = formatTime(totalSeconds);
+        if (modalTitleElement) {
+            modalTitleElement.innerText = reason === "timeout" ? "¡TIEMPO AGOTADO!" : "CAÍSTE AL VACÍO";
+        }
+
+        const usedTimeSeconds = Math.round(GAME_TIME_LIMIT - gameTimeRemaining);
+        const timeStr = formatTime(usedTimeSeconds);
 
         if (modalScoreVal) modalScoreVal.innerText = score;
         if (modalTimeVal) modalTimeVal.innerText = timeStr;
@@ -158,7 +158,7 @@ function gameOver() {
         if (nameEntryBox) {
             const lastName = localStorage.getItem("stickHero_lastPlayerName") || "";
             nameEntryBox.innerHTML = `
-                <label for="player-name-input" class="modal-sublabel">REGISTRA TU RÉCORD:</label>
+                <label for="player-name-input" class="modal-sublabel">REGISTRA TU RÉCORD (60s):</label>
                 <div class="input-row">
                     <input type="text" id="player-name-input" maxlength="10" placeholder="NOMBRE" value="${lastName}" class="pixel-input" autocomplete="off" spellcheck="false">
                     <button id="save-score-btn" type="button" class="pixel-save-btn">GUARDAR</button>
@@ -244,6 +244,7 @@ function handlePointerDown(event) {
         introductionElement.style.opacity = 0;
         phase = "stretching";
         lastStretchTick = sticks.last().length;
+        isTimerRunning = true; // Starts the 60-second challenge on first ladder stretch
     }
 }
 
@@ -306,31 +307,34 @@ function animate(timestamp) {
     }
     updateSparkles(delta);
 
-    // Turn countdown timer active during decision phases (waiting & stretching)
-    if (phase === "waiting" || phase === "stretching") {
-        turnTimeRemaining -= delta / 1000;
+    // 60-Second Challenge Timer Countdown
+    if (isTimerRunning && phase !== "ended") {
+        gameTimeRemaining -= delta / 1000;
         updateTimerUI();
 
-        // Audio warning when <= 3.0 seconds
-        if (turnTimeRemaining <= 3.0 && turnTimeRemaining > 0) {
-            const currentSec = Math.ceil(turnTimeRemaining);
+        // Audio warning when <= 5.0 seconds
+        if (gameTimeRemaining <= 5.0 && gameTimeRemaining > 0) {
+            const currentSec = Math.ceil(gameTimeRemaining);
             if (currentSec !== lastTimerWarningSec) {
                 lastTimerWarningSec = currentSec;
                 if (typeof playTimerTick === "function") playTimerTick();
             }
         }
 
-        // Time up -> ladder/Santa falls!
-        if (turnTimeRemaining <= 0) {
-            turnTimeRemaining = 0;
+        // 60 seconds finished -> Challenge over!
+        if (gameTimeRemaining <= 0) {
+            gameTimeRemaining = 0;
+            isTimerRunning = false;
             updateTimerUI();
-            phase = "falling";
-            playFallSound();
+            phase = "ended";
+            playRestartSound();
+            gameOver("timeout");
         }
     }
 
     switch (phase) {
         case "waiting":
+        case "ended":
             break;
         case "stretching": {
             sticks.last().length += delta / stretchingSpeed;
@@ -413,7 +417,6 @@ function animate(timestamp) {
                     rotation: 0
                 });
                 phase = "waiting";
-                resetTurnTimer(); // Reset countdown timer for the new platform
             }
             break;
         }
@@ -426,7 +429,8 @@ function animate(timestamp) {
             if (heroY < maxHeroY) {
                 heroY += delta / fallingSpeed;
             } else {
-                gameOver();
+                phase = "ended";
+                gameOver("fall");
             }
             break;
         }

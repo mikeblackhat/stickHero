@@ -33,9 +33,12 @@ const fallingSpeed = 2;
 const heroWidth = 17;
 const heroHeight = 30;
 
-// Anti-Cheat & Timer Configuration
+// Anti-Cheat & 60s Challenge Configuration
 const maxLadderLength = 310;
-const TURN_TIME_LIMIT = 8.0; // 8 seconds per turn
+const GAME_TIME_LIMIT = 60.0; // 60-second total challenge
+let gameTimeRemaining = GAME_TIME_LIMIT;
+let isTimerRunning = false;
+let lastTimerWarningSec = -1;
 
 // Game State Variables
 let phase = "waiting"; // waiting | stretching | turning | walking | transitioning | falling
@@ -51,12 +54,6 @@ let trees = [];
 
 let score = 0;
 let highScore = parseInt(localStorage.getItem("stickHero_highScore") || "0", 10);
-
-// Timer State
-let turnTimeRemaining = TURN_TIME_LIMIT;
-let gameStartTime = 0;
-let gameElapsedTime = 0;
-let lastTimerWarningSec = -1;
 
 // Theme State
 const savedTheme = localStorage.getItem("stickHero_theme");
@@ -82,6 +79,7 @@ const timerBarElement = document.getElementById("timer-bar");
 
 // Modal Elements
 const gameOverModal = document.getElementById("game-over-modal");
+const modalTitleElement = document.getElementById("modal-title");
 const modalScoreVal = document.getElementById("modal-score-val");
 const modalTimeVal = document.getElementById("modal-time-val");
 const modalBestVal = document.getElementById("modal-best-val");
