@@ -43,3 +43,4 @@ Y visita `http://localhost:8000`.
 - **Mantener presionado (Click / Tap / Espacio):** Estirar la escalera.
 - **Soltar:** La escalera cae y Santa cruza al siguiente edificio.
 - **Barra espaciadora o botón Reintentar:** Reiniciar tras caer.
+
