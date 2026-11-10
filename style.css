@@ -27,20 +27,20 @@ body.christmas-mode {
     z-index: 30;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .control-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 10px 14px;
     background: rgba(255, 255, 255, 0.95);
     border: 3px solid #222;
     border-radius: 8px;
     color: #111;
     font-family: 'Press Start 2P', monospace, sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     line-height: 1.4;
     cursor: pointer;
     box-shadow: 3px 3px 0px #000000;
@@ -83,10 +83,10 @@ body.christmas-mode .control-btn:active {
     box-shadow: 1px 1px 0px #ffd700;
 }
 
-/* Score Display (Top Center) */
+/* Score & Timer HUD (Top Center) */
 .score-container {
     position: absolute;
-    top: 24px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -94,6 +94,7 @@ body.christmas-mode .control-btn:active {
     align-items: center;
     z-index: 25;
     pointer-events: none;
+    gap: 6px;
 }
 
 #score {
@@ -105,12 +106,11 @@ body.christmas-mode .control-btn:active {
 }
 
 #high-score {
-    margin-top: 8px;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     letter-spacing: 1px;
     color: #555;
     background: rgba(255, 255, 255, 0.9);
-    padding: 6px 12px;
+    padding: 5px 10px;
     border: 2px solid #222;
     border-radius: 4px;
     box-shadow: 2px 2px 0px #000;
@@ -128,6 +128,79 @@ body.christmas-mode #high-score {
     border-color: #ffd700;
     box-shadow: 2px 2px 0px #ffd700;
     text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+}
+
+/* Timer HUD */
+.timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 2px solid #222;
+    box-shadow: 2px 2px 0px #000;
+    transition: all 0.2s ease;
+}
+
+body.christmas-mode .timer-container {
+    background: rgba(16, 28, 59, 0.92);
+    border-color: #ffd700;
+    box-shadow: 2px 2px 0px #ffd700;
+}
+
+.timer-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.65rem;
+    color: #222;
+}
+
+body.christmas-mode .timer-label-row {
+    color: #ffffff;
+}
+
+.timer-svg {
+    stroke: currentColor;
+}
+
+.timer-bar-track {
+    width: 120px;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+body.christmas-mode .timer-bar-track {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.timer-bar {
+    width: 100%;
+    height: 100%;
+    background: #4caf50;
+    transition: width 0.1s linear, background-color 0.2s ease;
+}
+
+.timer-container.timer-warning {
+    border-color: #e53935;
+    animation: pulseWarning 0.5s infinite alternate;
+}
+
+.timer-container.timer-warning .timer-bar {
+    background: #e53935;
+}
+
+.timer-container.timer-warning .timer-label-row {
+    color: #e53935;
+}
+
+@keyframes pulseWarning {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.04); }
 }
 
 /* Game Canvas Container */
@@ -200,22 +273,23 @@ body.christmas-mode .perfect-badge {
     text-shadow: 2px 2px 0px #b71c1c, 0 0 12px #ffeb3b;
 }
 
-/* Game Over Modal Card (Positioned at 36% from top) */
+/* Game Over Modal Card */
 .game-over-modal {
     position: absolute;
-    top: 36%;
+    top: 48%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: none;
     flex-direction: column;
     align-items: center;
-    padding: 24px 32px;
+    padding: 22px 28px;
     background: rgba(255, 255, 255, 0.98);
     border: 4px solid #222;
     border-radius: 12px;
     box-shadow: 6px 6px 0px #000;
     z-index: 35;
-    gap: 18px;
+    gap: 14px;
+    max-width: 90vw;
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -231,7 +305,7 @@ body.christmas-mode .game-over-modal {
 }
 
 .modal-title {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #222;
     letter-spacing: 1px;
     text-align: center;
@@ -245,15 +319,15 @@ body.christmas-mode .modal-title {
 .modal-scores {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 14px;
     background: rgba(0, 0, 0, 0.05);
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-radius: 6px;
     border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 body.christmas-mode .modal-scores {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.35);
     border-color: rgba(255, 215, 0, 0.3);
 }
 
@@ -266,7 +340,7 @@ body.christmas-mode .modal-scores {
 
 .modal-score-divider {
     width: 2px;
-    height: 36px;
+    height: 32px;
     background: rgba(0, 0, 0, 0.2);
 }
 
@@ -275,17 +349,17 @@ body.christmas-mode .modal-score-divider {
 }
 
 .modal-label {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     color: #777;
     letter-spacing: 1px;
 }
 
 body.christmas-mode .modal-label {
-    color: #ccc;
+    color: #bbb;
 }
 
 .modal-val {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     font-weight: 900;
     color: #222;
 }
@@ -293,6 +367,257 @@ body.christmas-mode .modal-label {
 body.christmas-mode .modal-val {
     color: #ffffff;
     text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+/* Name Registration Box */
+.name-entry-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.modal-sublabel {
+    font-size: 0.55rem;
+    color: #555;
+    letter-spacing: 0.5px;
+}
+
+body.christmas-mode .modal-sublabel {
+    color: #ffd700;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.pixel-input {
+    font-family: 'Press Start 2P', monospace, sans-serif;
+    font-size: 0.65rem;
+    padding: 8px 10px;
+    border: 2px solid #222;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #222;
+    width: 140px;
+    text-transform: uppercase;
+    outline: none;
+    box-shadow: 2px 2px 0px #000;
+}
+
+body.christmas-mode .pixel-input {
+    background: #0f1c3f;
+    color: #ffffff;
+    border-color: #ffd700;
+    box-shadow: 2px 2px 0px #ffd700;
+}
+
+.pixel-save-btn {
+    font-family: 'Press Start 2P', monospace, sans-serif;
+    font-size: 0.6rem;
+    padding: 8px 12px;
+    background: #4caf50;
+    color: #ffffff;
+    border: 2px solid #222;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px #000;
+    transition: transform 0.1s ease;
+}
+
+.pixel-save-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px #000;
+}
+
+.pixel-save-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px #000;
+}
+
+body.christmas-mode .pixel-save-btn {
+    border-color: #ffd700;
+    box-shadow: 2px 2px 0px #ffd700;
+}
+
+.saved-success-msg {
+    font-size: 0.55rem;
+    color: #4caf50;
+    padding: 6px;
+    text-align: center;
+}
+
+/* Leaderboard Tables */
+.leaderboard-preview-box {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.lb-section-title {
+    font-size: 0.58rem;
+    color: #555;
+    letter-spacing: 1px;
+}
+
+body.christmas-mode .lb-section-title {
+    color: #ffe082;
+}
+
+.leaderboard-table {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+body.christmas-mode .leaderboard-table {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 215, 0, 0.25);
+}
+
+.lb-header-row,
+.lb-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.5rem;
+    padding: 3px 6px;
+}
+
+.lb-header-row {
+    color: #888;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    padding-bottom: 4px;
+}
+
+body.christmas-mode .lb-header-row {
+    color: #aaa;
+    border-bottom-color: rgba(255, 215, 0, 0.3);
+}
+
+.lb-row {
+    color: #222;
+}
+
+body.christmas-mode .lb-row {
+    color: #ffffff;
+}
+
+.lb-row.lb-top1 {
+    color: #d32f2f;
+    font-weight: 900;
+}
+
+body.christmas-mode .lb-row.lb-top1 {
+    color: #ffd700;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+}
+
+.lb-col-rank {
+    width: 18px;
+    text-align: left;
+}
+
+.lb-col-name {
+    flex: 1;
+    text-align: left;
+    padding-left: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lb-col-pts {
+    width: 38px;
+    text-align: right;
+}
+
+.lb-col-time {
+    width: 50px;
+    text-align: right;
+    color: #777;
+}
+
+body.christmas-mode .lb-col-time {
+    color: #aaa;
+}
+
+.lb-empty {
+    font-size: 0.5rem;
+    color: #888;
+    padding: 10px;
+    text-align: center;
+}
+
+/* Standalone Leaderboard Modal */
+.standalone-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    backdrop-filter: blur(4px);
+}
+
+.modal-card {
+    background: rgba(255, 255, 255, 0.98);
+    border: 4px solid #222;
+    border-radius: 12px;
+    box-shadow: 6px 6px 0px #000;
+    padding: 24px;
+    width: 320px;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: popIn 0.25s ease;
+}
+
+body.christmas-mode .modal-card {
+    background: rgba(16, 28, 59, 0.98);
+    border-color: #ffd700;
+    box-shadow: 6px 6px 0px #ffd700;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.close-btn {
+    font-family: 'Press Start 2P', monospace, sans-serif;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    background: #e53935;
+    color: #fff;
+    border: 2px solid #222;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px #000;
+}
+
+body.christmas-mode .close-btn {
+    border-color: #ffd700;
+    box-shadow: 2px 2px 0px #ffd700;
 }
 
 /* Restart Button */
@@ -307,13 +632,14 @@ body.christmas-mode .modal-val {
     color: #ffffff;
     background: #d32f2f;
     font-family: 'Press Start 2P', monospace, sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     cursor: pointer;
     box-shadow: 4px 4px 0px #000000;
     transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.25s ease;
     outline: none;
+    margin-top: 4px;
 }
 
 .restart-svg {

@@ -1,4 +1,4 @@
-// Game Module: Mechanics, Physics, Game Loop & Input Handling
+// Game Module: Mechanics, Physics, Turn Timer, Leaderboard & Game Loop
 
 function createPlatform(x, w) {
     const buildingColors = ["#1e293b", "#27233a", "#3b1e22", "#1b302a", "#2c2a29"];
@@ -54,6 +54,63 @@ function generateTree() {
     trees.push({ x, color });
 }
 
+// Timer Management
+function resetTurnTimer() {
+    turnTimeRemaining = TURN_TIME_LIMIT;
+    lastTimerWarningSec = -1;
+    updateTimerUI();
+}
+
+function updateTimerUI() {
+    if (timerValElement) {
+        const displaySec = Math.max(0, turnTimeRemaining);
+        const prefix = displaySec < 10 ? "0" : "";
+        timerValElement.innerText = `${prefix}${displaySec.toFixed(1)}s`;
+    }
+    if (timerBarElement) {
+        const percent = Math.max(0, Math.min(100, (turnTimeRemaining / TURN_TIME_LIMIT) * 100));
+        timerBarElement.style.width = `${percent}%`;
+    }
+    if (timerContainer) {
+        timerContainer.classList.toggle("timer-warning", turnTimeRemaining <= 3.0);
+    }
+}
+
+// Leaderboard Rendering
+function renderLeaderboard(container, limit = 10) {
+    if (!container) return;
+    const list = getLeaderboard();
+    const items = list.slice(0, limit);
+
+    if (items.length === 0) {
+        container.innerHTML = `<div class="lb-empty">SIN RÉCORDS REGISTRADOS</div>`;
+        return;
+    }
+
+    let html = `
+        <div class="lb-header-row">
+            <span class="lb-col-rank">#</span>
+            <span class="lb-col-name">JUGADOR</span>
+            <span class="lb-col-pts">PTS</span>
+            <span class="lb-col-time">TIEMPO</span>
+        </div>
+    `;
+
+    items.forEach((item, idx) => {
+        const isTop1 = idx === 0 ? " lb-top1" : "";
+        html += `
+            <div class="lb-row${isTop1}">
+                <span class="lb-col-rank">${idx + 1}</span>
+                <span class="lb-col-name">${item.name}</span>
+                <span class="lb-col-pts">${item.score}</span>
+                <span class="lb-col-time">${item.time || "--:--"}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
 function resetGame() {
     phase = "waiting";
     lastTimestamp = undefined;
@@ -61,6 +118,9 @@ function resetGame() {
     score = 0;
     lastStretchTick = 0;
     lastStepX = 0;
+    gameStartTime = Date.now();
+
+    resetTurnTimer();
 
     introductionElement.style.opacity = 1;
     perfectElement.style.opacity = 0;
@@ -87,8 +147,39 @@ function resetGame() {
 
 function gameOver() {
     if (gameOverModal) {
+        const totalSeconds = Math.max(0, Math.floor((Date.now() - gameStartTime) / 1000));
+        const timeStr = formatTime(totalSeconds);
+
         if (modalScoreVal) modalScoreVal.innerText = score;
+        if (modalTimeVal) modalTimeVal.innerText = timeStr;
         if (modalBestVal) modalBestVal.innerText = highScore;
+
+        // Reset name entry box
+        if (nameEntryBox) {
+            const lastName = localStorage.getItem("stickHero_lastPlayerName") || "";
+            nameEntryBox.innerHTML = `
+                <label for="player-name-input" class="modal-sublabel">REGISTRA TU RÉCORD:</label>
+                <div class="input-row">
+                    <input type="text" id="player-name-input" maxlength="10" placeholder="NOMBRE" value="${lastName}" class="pixel-input" autocomplete="off" spellcheck="false">
+                    <button id="save-score-btn" type="button" class="pixel-save-btn">GUARDAR</button>
+                </div>
+            `;
+
+            // Attach save handler
+            const newSaveBtn = document.getElementById("save-score-btn");
+            const newNameInput = document.getElementById("player-name-input");
+            if (newSaveBtn && newNameInput) {
+                newSaveBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    const name = newNameInput.value.trim() || "JUGADOR";
+                    saveToLeaderboard(name, score, timeStr);
+                    nameEntryBox.innerHTML = `<div class="saved-success-msg">✓ GUARDADO CON ÉXITO</div>`;
+                    renderLeaderboard(leaderboardList, 5);
+                });
+            }
+        }
+
+        renderLeaderboard(leaderboardList, 5);
         gameOverModal.style.display = "flex";
     }
 }
@@ -110,8 +201,7 @@ function thePlatformTheStickHits() {
         return [undefined, false];
     }
 
-    // Anti-Cheat Rule: Must land strictly on the immediate next building
-    // Overshooting or landing on a further building in the background is treated as a miss
+    // Anti-Cheat: Must land strictly on the immediate next building
     if (targetPlatform.x <= stickFarX && stickFarX <= targetPlatform.x + targetPlatform.w) {
         const perfectStart = targetPlatform.x + targetPlatform.w / 2 - perfectAreaSize / 2;
         const perfectEnd = targetPlatform.x + targetPlatform.w / 2 + perfectAreaSize / 2;
@@ -119,12 +209,16 @@ function thePlatformTheStickHits() {
         return [targetPlatform, isPerfect];
     }
 
-    // Missed the intended building (too short or overshot)
     return [undefined, false];
 }
 
 // User Input Handling
 window.addEventListener("keydown", function (event) {
+    // If typing in the player name input, do not trigger game restart
+    if (event.target && event.target.id === "player-name-input") {
+        return;
+    }
+
     if (event.key === " ") {
         event.preventDefault();
         ensureAudioStarted();
@@ -137,8 +231,11 @@ function handlePointerDown(event) {
     if (
         event.target.closest("#theme-toggle") ||
         event.target.closest("#sound-toggle") ||
+        event.target.closest("#leaderboard-btn") ||
+        event.target.closest("#close-leaderboard-btn") ||
         event.target.closest("#restart") ||
-        event.target.closest("#game-over-modal")
+        event.target.closest("#game-over-modal") ||
+        event.target.closest("#leaderboard-modal")
     ) {
         return;
     }
@@ -172,6 +269,22 @@ if (restartButton) {
     });
 }
 
+// Standalone Leaderboard Modal Listeners
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        renderLeaderboard(standaloneLeaderboardList, 10);
+        if (leaderboardModal) leaderboardModal.style.display = "flex";
+    });
+}
+
+if (closeLeaderboardBtn) {
+    closeLeaderboardBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (leaderboardModal) leaderboardModal.style.display = "none";
+    });
+}
+
 window.addEventListener("resize", function () {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -193,6 +306,29 @@ function animate(timestamp) {
     }
     updateSparkles(delta);
 
+    // Turn countdown timer active during decision phases (waiting & stretching)
+    if (phase === "waiting" || phase === "stretching") {
+        turnTimeRemaining -= delta / 1000;
+        updateTimerUI();
+
+        // Audio warning when <= 3.0 seconds
+        if (turnTimeRemaining <= 3.0 && turnTimeRemaining > 0) {
+            const currentSec = Math.ceil(turnTimeRemaining);
+            if (currentSec !== lastTimerWarningSec) {
+                lastTimerWarningSec = currentSec;
+                if (typeof playTimerTick === "function") playTimerTick();
+            }
+        }
+
+        // Time up -> ladder/Santa falls!
+        if (turnTimeRemaining <= 0) {
+            turnTimeRemaining = 0;
+            updateTimerUI();
+            phase = "falling";
+            playFallSound();
+        }
+    }
+
     switch (phase) {
         case "waiting":
             break;
@@ -200,7 +336,7 @@ function animate(timestamp) {
             sticks.last().length += delta / stretchingSpeed;
             playStretchSound(sticks.last().length);
 
-            // Anti-Cheat Rule: Cannot stretch past max length. Forces drop if limit reached.
+            // Anti-Cheat: Max length cap forces auto-drop
             if (sticks.last().length >= maxLadderLength) {
                 sticks.last().length = maxLadderLength;
                 phase = "turning";
@@ -277,6 +413,7 @@ function animate(timestamp) {
                     rotation: 0
                 });
                 phase = "waiting";
+                resetTurnTimer(); // Reset countdown timer for the new platform
             }
             break;
         }
@@ -305,4 +442,3 @@ function animate(timestamp) {
 initStars();
 initSnow();
 resetGame();
-

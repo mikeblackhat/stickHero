@@ -229,6 +229,10 @@ function playRestartSound() {
     setTimeout(() => playTone(523.25, "square", 0.12, 0.08), 80); // C5
 }
 
+function playTimerTick() {
+    playTone(880.00, "square", 0.04, 0.07); // A5 alert
+}
+
 function updateSoundUI() {
     if (soundOnSvg && soundOffSvg) {
         soundOnSvg.style.display = isMuted ? "none" : "block";
