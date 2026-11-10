@@ -117,34 +117,70 @@ function formatTime(totalSeconds) {
     return `${mStr}:${sStr}`;
 }
 
-// Leaderboard Storage Helpers
+// Leaderboard Storage & Global Cloud Sync Helpers
+let cachedLeaderboard = [];
+
 function getLeaderboard() {
+    if (cachedLeaderboard.length > 0) return cachedLeaderboard;
     try {
         const data = localStorage.getItem("stickHero_leaderboard");
-        return data ? JSON.parse(data) : [];
+        cachedLeaderboard = data ? JSON.parse(data) : [];
     } catch (e) {
-        return [];
+        cachedLeaderboard = [];
     }
+    return cachedLeaderboard;
 }
 
-function saveToLeaderboard(name, finalScore, timeStr) {
+// Fetch Global Cloud Leaderboard from /api/leaderboard
+async function syncGlobalLeaderboard(onUpdated) {
+    try {
+        const res = await fetch("/api/leaderboard");
+        if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+                cachedLeaderboard = list;
+                localStorage.setItem("stickHero_leaderboard", JSON.stringify(list));
+                if (typeof onUpdated === "function") onUpdated(list);
+                return list;
+            }
+        }
+    } catch (e) {}
+    const local = getLeaderboard();
+    if (typeof onUpdated === "function") onUpdated(local);
+    return local;
+}
+
+async function saveToLeaderboard(name, finalScore, timeStr, onUpdated) {
     const cleanName = (name || "JUGADOR").trim().toUpperCase().slice(0, 10);
-    const list = getLeaderboard();
     const date = new Date().toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+    const localEntry = { name: cleanName, score: finalScore, time: timeStr, date };
 
-    list.push({
-        name: cleanName,
-        score: finalScore,
-        time: timeStr,
-        date: date
-    });
-
-    // Sort descending by score, secondary by time
+    // Update local cache immediately so UI responds instantly
+    const list = getLeaderboard().filter((i) => !(i.name === cleanName && i.score === finalScore));
+    list.push(localEntry);
     list.sort((a, b) => b.score - a.score);
-
-    // Keep top 10
-    const trimmed = list.slice(0, 10);
-    localStorage.setItem("stickHero_leaderboard", JSON.stringify(trimmed));
+    cachedLeaderboard = list.slice(0, 20);
+    localStorage.setItem("stickHero_leaderboard", JSON.stringify(cachedLeaderboard));
     localStorage.setItem("stickHero_lastPlayerName", cleanName);
-    return trimmed;
+
+    if (typeof onUpdated === "function") onUpdated(cachedLeaderboard);
+
+    // Save to global cloud database via /api/leaderboard
+    try {
+        const res = await fetch("/api/leaderboard", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: cleanName, score: finalScore, time: timeStr })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            if (Array.isArray(updated)) {
+                cachedLeaderboard = updated;
+                localStorage.setItem("stickHero_leaderboard", JSON.stringify(updated));
+                if (typeof onUpdated === "function") onUpdated(updated);
+                return updated;
+            }
+        }
+    } catch (e) {}
+    return cachedLeaderboard;
 }

@@ -172,7 +172,9 @@ function gameOver(reason) {
                 newSaveBtn.addEventListener("click", function (e) {
                     e.stopPropagation();
                     const name = newNameInput.value.trim() || "JUGADOR";
-                    saveToLeaderboard(name, score, timeStr);
+                    saveToLeaderboard(name, score, timeStr, function () {
+                        renderLeaderboard(leaderboardList, 5);
+                    });
                     nameEntryBox.innerHTML = `<div class="saved-success-msg">✓ GUARDADO CON ÉXITO</div>`;
                     renderLeaderboard(leaderboardList, 5);
                 });
@@ -180,6 +182,9 @@ function gameOver(reason) {
         }
 
         renderLeaderboard(leaderboardList, 5);
+        syncGlobalLeaderboard(function () {
+            renderLeaderboard(leaderboardList, 5);
+        });
         gameOverModal.style.display = "flex";
     }
 }
@@ -276,6 +281,9 @@ if (leaderboardBtn) {
         e.stopPropagation();
         renderLeaderboard(standaloneLeaderboardList, 10);
         if (leaderboardModal) leaderboardModal.style.display = "flex";
+        syncGlobalLeaderboard(function () {
+            renderLeaderboard(standaloneLeaderboardList, 10);
+        });
     });
 }
 
@@ -446,3 +454,4 @@ function animate(timestamp) {
 initStars();
 initSnow();
 resetGame();
+syncGlobalLeaderboard();
